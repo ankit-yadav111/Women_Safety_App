@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DesignSurface">
+    <option name="filePathToZoomLevelMap">
+      <map>
+        <entry key="..\:/Users/ADMIN/AndroidStudioProjects/WomenSafety/app/src/main/res/drawable/on_off.xml" value="0.2035" />
+        <entry key="..\:/Users/ADMIN/AndroidStudioProjects/WomenSafety/app/src/main/res/drawable/roundcorner.xml" value="0.2035" />
+        <entry key="..\:/Users/ADMIN/AndroidStudioProjects/WomenSafety/app/src/main/res/drawable/start_recording.xml" value="0.2035" />
+        <entry key="..\:/Users/ADMIN/AndroidStudioProjects/WomenSafety/app/src/main/res/drawable/stop_recording.xml" value="0.2035" />
+        <entry key="..\:/Users/ADMIN/AndroidStudioProjects/WomenSafety/app/src/main/res/layout/activity_main.xml" value="0.20425724637681159" />
+      </map>
+    </option>
+  </component>
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_11" default="true" project-jdk-name="Android Studio default JDK" project-jdk-type="JavaSDK">
+    <output url="file://$PROJECT_DIR$/build/classes" />
+  </component>
+  <component name="ProjectType">
+    <option name="id" value="Android" />
+  </component>
+</project>
