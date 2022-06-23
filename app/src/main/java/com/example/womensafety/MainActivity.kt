@@ -1,27 +1,29 @@
 package com.example.womensafety
 
-import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
-import android.media.MediaRecorder
-import android.os.Bundle
-import android.os.CountDownTimer
-import android.util.Log
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import android.os.Bundle
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
+import android.util.Log
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
 import com.example.womensafety.databinding.ActivityMainBinding
-import java.io.IOException
-
 
 class MainActivity : AppCompatActivity() {
 
+    private lateinit var speechRecognizer: SpeechRecognizer
+    private var count:Int=0
+    private lateinit var speechRecognizerIntent: Intent
     private lateinit var binding: ActivityMainBinding
-    private var output: String=""
-    private var mediaRecorder: MediaRecorder?=null
-    private lateinit var countDowntimer:CountDownTimer
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,62 +31,97 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        output="${externalCacheDir?.absolutePath}/Audio.mp3"
-        mediaRecorder=MediaRecorder()
 
-        binding.imageButton.setOnClickListener{CurrentStatus()}
+        if(ContextCompat.checkSelfPermission
+                (this,android.Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED)
+        {
+            checkPermission()
+        }
+        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
+        speechRecognizerIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+
+        Log.e("Ankit","Intent")
+
+        binding.imageButton.setOnClickListener {onClick() }
+
+        speechRecognizer.setRecognitionListener(object: RecognitionListener {
+            override fun onReadyForSpeech(p0: Bundle?) {}
+
+            override fun onBeginningOfSpeech() {
+                Log.e("Ankit","Beg Fun")
+            }
+
+            override fun onRmsChanged(p0: Float) {
+                Log.e("Ankit","onRms")
+            }
+
+            override fun onBufferReceived(p0: ByteArray?) {
+                Log.e("Ankit","onBuffer")
+            }
+
+            override fun onEndOfSpeech() {
+                Log.e("Ankit","onEnd")
+            }
+
+            override fun onError(p0: Int) {
+                Log.e("Ankit","onError")
+                count=0
+                onClick()
+            }
+
+            override fun onResults(bundle: Bundle?) {
+                Log.e("Ankit","Result Fun")
+                binding.imageButton.setImageResource(R.drawable.start_recording)
+                val data = bundle!!.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                transmitToPython(data!![0])
+            }
+
+            override fun onPartialResults(p0: Bundle?) {
+                Log.e("Ankit","onPartialResults")
+            }
+
+            override fun onEvent(p0: Int, p1: Bundle?) {
+                Log.e("Ankit","OnEvent")
+            }
+
+        })
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        val inflater: MenuInflater = menuInflater
+        inflater.inflate(R.menu.layout_menu, menu)
+        return true
     }
 
 
-    fun start(){
-        Log.e("Tag","Start!")
-        if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(this,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            val permissions = arrayOf(android.Manifest.permission.RECORD_AUDIO, android.Manifest.permission.WRITE_EXTERNAL_STORAGE, android.Manifest.permission.READ_EXTERNAL_STORAGE)
-            ActivityCompat.requestPermissions(this, permissions,0)
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        // Handle item selection
+        return when (item.itemId) {
+            R.id.Contact->{
+                val intent = Intent(this, ContactActivity::class.java)
+                startActivity(intent)
+                true
+            }
+            else -> {false}
+        }
+    }
+
+
+    private fun onClick() {
+        Log.e("Ankit","OnCLick Fun")
+        if (count == 0) {
+            Log.e("Ankit","000000")
+            count = 1
+            binding.imageButton.setImageResource(R.drawable.start_recording)
+            speechRecognizer.startListening(speechRecognizerIntent)
         } else {
-            mediaRecorder?.setAudioSource(MediaRecorder.AudioSource.MIC)
-            mediaRecorder?.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-            mediaRecorder?.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-            mediaRecorder?.setOutputFile(output)
-            startRecording()
+            Log.e("Ankit","111111")
+            count = 0
+            speechRecognizer.stopListening()
         }
     }
 
-    fun CurrentStatus(){
-        Log.e("Tag","CurrentStatus!")
-        if(binding.status.text=="Press Button to Switch ON"){
-            binding.status.text="Press Button to Switch OFF"
-            start()
-        }
-        else{
-            stop()
-        }
-    }
-
-    fun startRecording(){
-        Log.e("Tag","Start Recording!")
-        try {
-            mediaRecorder?.prepare()
-            mediaRecorder?.start()
-            Toast.makeText(this, "Recording started!", Toast.LENGTH_SHORT).show()
-            timer()
-        } catch (e: IOException) {
-            Log.e("Tag","Prepare Failed!")
-        }
-    }
-
-    fun stopRecording(){
-        Log.e("Tag","Stop Recording")
-        mediaRecorder?.stop()
-        mediaRecorder?.release()
-        mediaRecorder=null
-        Toast.makeText(this,"Recording Stopped", Toast.LENGTH_SHORT).show()
-        Log.e("Tag","Stopped")
-    }
-
-    fun transmitTOpython(){
+    fun transmitToPython(data:String){
         Log.e("Tag","Python")
         if (! Python.isStarted()) {
             Python.start( AndroidPlatform(this))
@@ -93,26 +130,31 @@ class MainActivity : AppCompatActivity() {
         val py = Python.getInstance()
         val module = py.getModule("MyProgram")
 
-        val bytes = module.callAttr("main",output)
+        val bytes = module.callAttr("main",data)
         Toast.makeText(this,"${bytes.toString()}",Toast.LENGTH_SHORT).show()
         Log.e("Tag","Python Done")
-        start()
     }
 
-    fun stop(){
-        binding.status.text="Press Button to Switch ON"
-        countDowntimer?.cancel()
-        stopRecording()
+    private fun checkPermission() {
+
+        ActivityCompat.requestPermissions(
+            this, arrayOf(android.Manifest.permission.RECORD_AUDIO),
+            RecordAudioRequestCode
+        )
     }
 
-    fun timer(){
-        Log.e("Tag","Timer!")
-        countDowntimer = object : CountDownTimer(30000, 1000) {
-            override fun onTick(millisUntilFinished: Long) {}
-            override fun onFinish() {
-                stopRecording()
-                transmitTOpython()
-            }
-        }.start()
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if(requestCode== RecordAudioRequestCode && grantResults.isNotEmpty()){
+            Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    companion object{
+        const val RecordAudioRequestCode= 1
     }
 }

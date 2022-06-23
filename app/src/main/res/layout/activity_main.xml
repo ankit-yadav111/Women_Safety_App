@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -29,10 +28,10 @@
         drawableTop will add above mic image-->
 
         <ImageButton
+            android:id="@+id/imageButton"
             android:layout_width="140dp"
             android:layout_height="140dp"
-            android:id="@+id/imageButton"
-            android:src="@drawable/on_off"
+            android:src="@drawable/stop_recording"
             android:background="@drawable/roundcorner"
             android:padding="1dp"
             android:textAlignment="center"

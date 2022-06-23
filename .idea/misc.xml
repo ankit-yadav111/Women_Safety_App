@@ -3,11 +3,20 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/Users/ADMIN/AndroidStudioProjects/WomenSafety/app/src/main/res/drawable-v24/ic_launcher_foreground.xml" value="0.182" />
+        <entry key="..\:/Users/ADMIN/AndroidStudioProjects/WomenSafety/app/src/main/res/drawable/ic_baseline_settings_24.xml" value="0.182" />
+        <entry key="..\:/Users/ADMIN/AndroidStudioProjects/WomenSafety/app/src/main/res/drawable/ic_launcher_background.xml" value="0.182" />
         <entry key="..\:/Users/ADMIN/AndroidStudioProjects/WomenSafety/app/src/main/res/drawable/on_off.xml" value="0.2035" />
         <entry key="..\:/Users/ADMIN/AndroidStudioProjects/WomenSafety/app/src/main/res/drawable/roundcorner.xml" value="0.2035" />
         <entry key="..\:/Users/ADMIN/AndroidStudioProjects/WomenSafety/app/src/main/res/drawable/start_recording.xml" value="0.2035" />
         <entry key="..\:/Users/ADMIN/AndroidStudioProjects/WomenSafety/app/src/main/res/drawable/stop_recording.xml" value="0.2035" />
+        <entry key="..\:/Users/ADMIN/AndroidStudioProjects/WomenSafety/app/src/main/res/layout/activity_contact.xml" value="0.22554347826086957" />
         <entry key="..\:/Users/ADMIN/AndroidStudioProjects/WomenSafety/app/src/main/res/layout/activity_main.xml" value="0.20425724637681159" />
+        <entry key="..\:/Users/ADMIN/AndroidStudioProjects/WomenSafety/app/src/main/res/layout/activity_main2.xml" value="0.22554347826086957" />
+        <entry key="..\:/Users/ADMIN/AndroidStudioProjects/WomenSafety/app/src/main/res/layout/content_contact.xml" value="0.22554347826086957" />
+        <entry key="..\:/Users/ADMIN/AndroidStudioProjects/WomenSafety/app/src/main/res/layout/message_layout.xml" value="0.22554347826086957" />
+        <entry key="..\:/Users/ADMIN/AndroidStudioProjects/WomenSafety/app/src/main/res/layout/recycler_element.xml" value="0.22554347826086957" />
+        <entry key="..\:/Users/ADMIN/AndroidStudioProjects/WomenSafety/app/src/main/res/menu/layout_menu.xml" value="0.253125" />
       </map>
     </option>
   </component>
