@@ -1,27 +1,36 @@
 package com.example.womensafety
 
+import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
-import android.util.Log
+import android.telephony.SmsManager
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
+import com.example.womensafety.contact.ContactViewModel
 import com.example.womensafety.databinding.ActivityMainBinding
+
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var speechRecognizer: SpeechRecognizer
-    private var count:Int=0
+    private lateinit var viewModel:ContactViewModel
+    private var recordedData=""
+    private lateinit var text:String
+    private val onString= "Press Button to Switch ON"
+    private val offString = "Press Button to Switch OFF"
     private lateinit var speechRecognizerIntent: Intent
     private lateinit var binding: ActivityMainBinding
 
@@ -31,59 +40,58 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        viewModel= ViewModelProvider(this,
+            ViewModelProvider.AndroidViewModelFactory.getInstance(application))[ContactViewModel::class.java]
 
-        if(ContextCompat.checkSelfPermission
-                (this,android.Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED)
+
+
+        if((ContextCompat.checkSelfPermission
+                (this,Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED) && ContextCompat.checkSelfPermission(this,
+            Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED)
         {
             checkPermission()
         }
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
         speechRecognizerIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+        speechRecognizerIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS,30000)
 
-        Log.e("Ankit","Intent")
 
-        binding.imageButton.setOnClickListener {onClick() }
+        binding.imageButton.setOnClickListener {fetchSize()}
 
-        speechRecognizer.setRecognitionListener(object: RecognitionListener {
+       speechRecognizer.setRecognitionListener(object: RecognitionListener {
             override fun onReadyForSpeech(p0: Bundle?) {}
 
-            override fun onBeginningOfSpeech() {
-                Log.e("Ankit","Beg Fun")
-            }
+            override fun onBeginningOfSpeech() {}
 
-            override fun onRmsChanged(p0: Float) {
-                Log.e("Ankit","onRms")
-            }
+            override fun onRmsChanged(p0: Float) {}
 
-            override fun onBufferReceived(p0: ByteArray?) {
-                Log.e("Ankit","onBuffer")
-            }
+            override fun onBufferReceived(p0: ByteArray?) {}
 
-            override fun onEndOfSpeech() {
-                Log.e("Ankit","onEnd")
-            }
+            override fun onEndOfSpeech(){}
 
-            override fun onError(p0: Int) {
-                Log.e("Ankit","onError")
-                count=0
+            override fun onError(p0: Int){
+                binding.status.text=offString
                 onClick()
             }
 
             override fun onResults(bundle: Bundle?) {
-                Log.e("Ankit","Result Fun")
                 binding.imageButton.setImageResource(R.drawable.start_recording)
                 val data = bundle!!.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                transmitToPython(data!![0])
+                if(data!=null){
+                    recordedData+= data[0]
+                }
+                transmitToPython(recordedData)
             }
-
             override fun onPartialResults(p0: Bundle?) {
-                Log.e("Ankit","onPartialResults")
+                val data= p0!!.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                if (data != null) {
+                    if (data.isNotEmpty()){
+                        recordedData+=data[0]
+                    }
+                }
             }
 
-            override fun onEvent(p0: Int, p1: Bundle?) {
-                Log.e("Ankit","OnEvent")
-            }
-
+            override fun onEvent(p0: Int, p1: Bundle?) {}
         })
     }
 
@@ -106,39 +114,81 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun fetchSize(){
+        viewModel.allCont.observe(this,  Observer{list->
+            list?.let {
+                checkContact(list.size)
+            }
+        })
+    }
+
+    private fun checkContact(listSize:Int){
+        text=binding.status.text.toString()
+        if(text==onString){
+            if(listSize>0){
+                onClick()
+                Toast.makeText(this,listSize.toString(),Toast.LENGTH_SHORT).show()
+            }
+            else {
+                Toast.makeText(this,"Add Contact",Toast.LENGTH_LONG).show()
+            }
+        }
+        else{
+            onClick()
+        }
+    }
+
 
     private fun onClick() {
-        Log.e("Ankit","OnCLick Fun")
-        if (count == 0) {
-            Log.e("Ankit","000000")
-            count = 1
+        if (text == onString) {
+            binding.status.text=offString
             binding.imageButton.setImageResource(R.drawable.start_recording)
             speechRecognizer.startListening(speechRecognizerIntent)
         } else {
-            Log.e("Ankit","111111")
-            count = 0
+            binding.status.text=onString
+            binding.imageButton.setImageResource(R.drawable.stop_recording)
             speechRecognizer.stopListening()
         }
     }
 
     fun transmitToPython(data:String){
-        Log.e("Tag","Python")
         if (! Python.isStarted()) {
             Python.start( AndroidPlatform(this))
         }
-
         val py = Python.getInstance()
         val module = py.getModule("MyProgram")
+        val bytes = module.callAttr("main",data).toString()
+        if(bytes=="0"){
+            Toast.makeText(this,"Restart the Function",Toast.LENGTH_SHORT).show()
+            onClick()
+        }
+        else{
+            Toast.makeText(this,"SuccessFully Complete",Toast.LENGTH_SHORT).show()
+            sendMessage()
+            binding.imageButton.setImageResource(R.drawable.stop_recording)
+        }
+    }
 
-        val bytes = module.callAttr("main",data)
-        Toast.makeText(this,"${bytes.toString()}",Toast.LENGTH_SHORT).show()
-        Log.e("Tag","Python Done")
+    private fun sendMessage(){
+        val smsManager=SmsManager.getDefault()
+        viewModel.allCont.observe(this,  Observer{list->
+            list?.let {
+                var i=0
+                while(i<list.size){
+                    val name=list[i].name
+                    val  number= list[i].number
+                    smsManager.sendTextMessage(number,null,
+                        "Hii $name,I am in trouble.\nPlease Help!",null,null)
+                    i++
+                }
+            }
+        })
+
     }
 
     private fun checkPermission() {
-
         ActivityCompat.requestPermissions(
-            this, arrayOf(android.Manifest.permission.RECORD_AUDIO),
+            this, arrayOf(Manifest.permission.RECORD_AUDIO,Manifest.permission.SEND_SMS),
             RecordAudioRequestCode
         )
     }

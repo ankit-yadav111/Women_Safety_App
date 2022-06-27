@@ -7,43 +7,41 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.example.contact.R
+import com.example.womensafety.ContactActivity
+import com.example.womensafety.R
 
-class ContactAdapter (private val context: Context ) : RecyclerView.Adapter<ContactAdapter.NoteViewHolder>(){
+class ContactAdapter (private val context: Context, private val listener: ContactActivity ) : RecyclerView.Adapter<ContactAdapter.ContViewHolder>(){
 
-    val allcont = ArrayList<contact>()
+    private val allCont = ArrayList<contact>()
 
-    inner class NoteViewHolder(itemView: View): RecyclerView.ViewHolder(itemView) {
-        val textView = itemView.findViewById<TextView>(R.id.text)
-        val deleteButton = itemView.findViewById<ImageView>(R.id.deleteButton)
+    inner class ContViewHolder(itemView: View): RecyclerView.ViewHolder(itemView) {
+        val textName: TextView = itemView.findViewById(R.id.textName)
+        val textNumber: TextView= itemView.findViewById(R.id.textNumber)
+        val deleteButton: ImageView = itemView.findViewById(R.id.deleteButton)
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): NoteViewHolder {
-        val viewHolder = NoteViewHolder(LayoutInflater.from(context).inflate(R.layout.contact_item_list,parent, false))
-//        viewHolder.deleteButton.setOnClickListener{
-//            listener.onItemClicked(allcont[viewHolder.adapterPosition])
-//        }
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ContViewHolder {
+        val viewHolder = ContViewHolder(LayoutInflater.from(context).inflate(R.layout.recycler_element,parent, false))
+        viewHolder.deleteButton.setOnClickListener{
+            listener.onItemClicked(allCont[viewHolder.adapterPosition])
+        }
         return viewHolder
     }
 
-    override fun onBindViewHolder(holder: NoteViewHolder, position: Int) {
-        val currentNote =allcont[position]
-        holder.textView.text = currentNote.text
+    override fun onBindViewHolder(holder: ContViewHolder, position: Int) {
+        val currentContact =allCont[position]
+        holder.textName.text = currentContact.name
+        holder.textNumber.text=currentContact.number
     }
 
     override fun getItemCount(): Int {
-        return allcont.size
+        return allCont.size
     }
 
-    fun updateList(newlist: List<contact>){
-        allcont.clear()
-        allcont.addAll(newlist)
+    fun updateList(newList: List<contact>){
+        allCont.clear()
+        allCont.addAll(newList)
 
         notifyDataSetChanged()
     }
-
-}
-
-interface IContact{
-    fun onItemClicked(note: contact)
 }
