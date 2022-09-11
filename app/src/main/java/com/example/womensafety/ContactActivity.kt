@@ -21,6 +21,8 @@ class ContactActivity : AppCompatActivity() {
         binding = ActivityContactBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        this.title="Add Contact"
+
 
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
         val adapter =ContactAdapter(this,this)

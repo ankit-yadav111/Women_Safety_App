@@ -1,7 +1,6 @@
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
-    id 'com.chaquo.python'
     id 'kotlin-kapt'
 }
 
@@ -14,22 +13,6 @@ android {
         targetSdk 32
         versionCode 1
         versionName "1.0"
-
-        ndk {
-            abiFilters "armeabi-v7a", "x86"
-        }
-
-        python {
-            buildPython "C:/Users/ADMIN/AppData/Local/Programs/Python/Python39/python.exe"
-            pyc{
-                src false
-            }
-        }
-        sourceSets {
-            main {
-                python.srcDir "scr/main/python"
-            }
-        }
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 

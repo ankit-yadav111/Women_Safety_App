@@ -3,11 +3,13 @@ package com.example.womensafety
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.*
 import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.telephony.SmsManager
+import android.util.Log
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
@@ -17,12 +19,13 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
-import com.chaquo.python.Python
-import com.chaquo.python.android.AndroidPlatform
 import com.example.womensafety.contact.ContactViewModel
 import com.example.womensafety.databinding.ActivityMainBinding
+import java.io.IOException
+import java.util.*
 
 
+@Suppress("DEPRECATION")
 class MainActivity : AppCompatActivity() {
 
     private lateinit var speechRecognizer: SpeechRecognizer
@@ -33,6 +36,10 @@ class MainActivity : AppCompatActivity() {
     private val offString = "Press Button to Switch OFF"
     private lateinit var speechRecognizerIntent: Intent
     private lateinit var binding: ActivityMainBinding
+    var locationManager: LocationManager? = null
+    var latitude = 0.0
+    var longitude = 0.0
+    var address = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,17 +50,21 @@ class MainActivity : AppCompatActivity() {
         viewModel= ViewModelProvider(this,
             ViewModelProvider.AndroidViewModelFactory.getInstance(application))[ContactViewModel::class.java]
 
-
-
         if((ContextCompat.checkSelfPermission
-                (this,Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED) && ContextCompat.checkSelfPermission(this,
-            Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED)
+                (this,Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED) && (ContextCompat.checkSelfPermission(this,
+            Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) && (ContextCompat.checkSelfPermission(this,
+            Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED))
         {
             checkPermission()
         }
+        locationManager = this.getSystemService(LOCATION_SERVICE) as LocationManager
+        locationManager!!.requestLocationUpdates(
+            LocationManager.GPS_PROVIDER,
+            0, 10f, locationListenerGPS
+        )
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
         speechRecognizerIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
-        speechRecognizerIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS,30000)
+        speechRecognizerIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS,10000)
 
 
         binding.imageButton.setOnClickListener {fetchSize()}
@@ -80,7 +91,7 @@ class MainActivity : AppCompatActivity() {
                 if(data!=null){
                     recordedData+= data[0]
                 }
-                transmitToPython(recordedData)
+                checkSpeech(recordedData)
             }
             override fun onPartialResults(p0: Bundle?) {
                 val data= p0!!.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
@@ -127,7 +138,6 @@ class MainActivity : AppCompatActivity() {
         if(text==onString){
             if(listSize>0){
                 onClick()
-                Toast.makeText(this,listSize.toString(),Toast.LENGTH_SHORT).show()
             }
             else {
                 Toast.makeText(this,"Add Contact",Toast.LENGTH_LONG).show()
@@ -151,34 +161,40 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun transmitToPython(data:String){
-        if (! Python.isStarted()) {
-            Python.start( AndroidPlatform(this))
+    fun checkSpeech(data:String){
+        var flag=0
+        val wordList = listOf("help","bacho","leave","bachao","live","leaf")
+        val inputList = data.split(" ")
+        for(item in wordList.distinct()) {
+            if(Collections.frequency(inputList,item)>=3){
+                flag= 1
+                break
+            }
         }
-        val py = Python.getInstance()
-        val module = py.getModule("MyProgram")
-        val bytes = module.callAttr("main",data).toString()
-        if(bytes=="0"){
+        if(flag==0){
             Toast.makeText(this,"Restart the Function",Toast.LENGTH_SHORT).show()
             onClick()
         }
         else{
             Toast.makeText(this,"SuccessFully Complete",Toast.LENGTH_SHORT).show()
             sendMessage()
+            binding.status.text=onString
             binding.imageButton.setImageResource(R.drawable.stop_recording)
         }
     }
 
     private fun sendMessage(){
         val smsManager=SmsManager.getDefault()
+        val strUri = "http://maps.google.com/maps?q=loc:$latitude,$longitude (Help!)"
         viewModel.allCont.observe(this,  Observer{list->
             list?.let {
                 var i=0
                 while(i<list.size){
                     val name=list[i].name
                     val  number= list[i].number
+                    val msg = "Hii $name,I am in trouble.\nPlease Help!\nMap Link: $strUri \n"
                     smsManager.sendTextMessage(number,null,
-                        "Hii $name,I am in trouble.\nPlease Help!",null,null)
+                       msg,null,null)
                     i++
                 }
             }
@@ -188,7 +204,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun checkPermission() {
         ActivityCompat.requestPermissions(
-            this, arrayOf(Manifest.permission.RECORD_AUDIO,Manifest.permission.SEND_SMS),
+            this, arrayOf(Manifest.permission.RECORD_AUDIO,Manifest.permission.SEND_SMS,Manifest.permission.ACCESS_FINE_LOCATION),
             RecordAudioRequestCode
         )
     }
@@ -206,5 +222,17 @@ class MainActivity : AppCompatActivity() {
 
     companion object{
         const val RecordAudioRequestCode= 1
+    }
+
+    private var locationListenerGPS: LocationListener = object : LocationListener {
+
+        override fun onLocationChanged(location: Location) {
+            latitude = location.latitude
+            longitude = location.longitude
+            locationManager?.removeUpdates(this)
+        }
+
+        override fun onProviderEnabled(provider: String) {}
+        override fun onProviderDisabled(provider: String) {}
     }
 }
